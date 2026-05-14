@@ -36,12 +36,11 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["sidebar.html,sidebar.js"],
-      "matches": [
-        "https://meet.google.com/*",
-        "https://*.teams.microsoft.com/*",
-        "https://zoom.us/*"
-      ]
+      "resources": [
+        "sidebar.html",
+        "sidebar.js"
+      ],
+      "matches": ["<all_urls>"]
     }
   ]
 }

@@ -152,42 +152,43 @@ function startRecording(stream) {
 
 async function transcribeChunk(audioBlob) {
   try {
-    const formData = new FormData();
-    formData.append('audio', audioBlob, 'audio.webm');
-    if (currentSpeakerName) formData.append('speaker', currentSpeakerName);
-
-    const response = await fetch('http://localhost:3001/transcribe', {
-      method: 'POST',
-      body: formData
+    // Convert blob to base64 to send via chrome message
+    const base64 = await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(audioBlob);
     });
 
-    if (!response.ok) return;
-
-    const data = await response.json();
-    const text = data.transcript ? data.transcript.trim() : '';
-
-    if (!text) return;
-
-    console.log('Toastmaster transcript:', text);
-
-    fullTranscript += ' ' + text;
-
-    if (currentSpeakerName) {
-      if (!speakerTranscripts[currentSpeakerName]) speakerTranscripts[currentSpeakerName] = '';
-      speakerTranscripts[currentSpeakerName] += ' ' + text;
-    }
-
-    if (!wordOfDay) detectWordOfDay(text);
-    detectSpeechType(text);
-
-    sendToSidebar({
-      action: 'liveTranscript',
-      final: text,
-      interim: '',
+    // Send to background which can call localhost
+    chrome.runtime.sendMessage({
+      action: 'transcribeAudio',
+      audioBase64: base64,
+      mimeType: audioBlob.type,
       speaker: currentSpeakerName
-    });
+    }, (response) => {
+      if (response && response.transcript && response.transcript.trim()) {
+        const text = response.transcript.trim();
+        fullTranscript += ' ' + text;
 
-    resetSilenceTimer();
+        if (currentSpeakerName) {
+          if (!speakerTranscripts[currentSpeakerName]) speakerTranscripts[currentSpeakerName] = '';
+          speakerTranscripts[currentSpeakerName] += ' ' + text;
+        }
+
+        if (!wordOfDay) detectWordOfDay(text);
+        detectSpeechType(text);
+
+        sendToSidebar({
+          action: 'liveTranscript',
+          final: text,
+          interim: '',
+          speaker: currentSpeakerName
+        });
+
+        resetSilenceTimer();
+        console.log('Toastmaster transcript:', text);
+      }
+    });
 
   } catch (error) {
     console.error('Toastmaster transcription error:', error);
