@@ -32,6 +32,10 @@ let silenceTimer = null;
 
 let captionInterval = null;
 
+let timerInterval = null;
+
+let elapsedSeconds = 0;
+
 const SILENCE_THRESHOLD = 5000;
 
 
@@ -166,6 +170,24 @@ function startCaptionCapture() {
     possibleCaptions.forEach((text) => {
 
       if (!fullTranscript.includes(text)) {
+        if (
+  currentSpeakerName &&
+  !speakerStartTime
+) {
+
+  speakerStartTime = Date.now();
+
+  console.log(
+    'Speech started'
+  );
+
+  startTimer();
+
+  sendToSidebar({
+    action: 'speechStarted',
+    speakerName: currentSpeakerName
+  });
+}
 
         fullTranscript += ' ' + text;
 
@@ -282,42 +304,97 @@ function detectWordOfDay(text) {
 
 function detectSpeechType(text) {
 
+  const lower = text.toLowerCase();
+
+  // Table Topics
   if (
-    /table topics/i.test(text) ||
-    /impromptu/i.test(text)
+    lower.includes('table topic') ||
+    lower.includes('table topics') ||
+    lower.includes('impromptu')
   ) {
 
     speechType = 'table_topics';
 
+    console.log(
+      'Speech Type:',
+      speechType
+    );
+
     sendToSidebar({
       action: 'speechTypeDetected',
-      speechType: 'table_topics'
+      speechType
     });
 
-    chrome.runtime.sendMessage({
-      action: 'speechTypeDetected',
-      speechType: 'table_topics'
-    });
+    return;
+  }
 
-  } else if (
-    /prepared speech/i.test(text) ||
-    /prepared speaker/i.test(text)
+  // Prepared Speech
+  if (
+    lower.includes('prepared speech') ||
+    lower.includes('project speech') ||
+    lower.includes('ice breaker') ||
+    lower.includes('pathways')
   ) {
 
     speechType = 'prepared_speech';
 
+    console.log(
+      'Speech Type:',
+      speechType
+    );
+
     sendToSidebar({
       action: 'speechTypeDetected',
-      speechType: 'prepared_speech'
+      speechType
     });
 
-    chrome.runtime.sendMessage({
+    return;
+  }
+
+  // Evaluation
+  if (
+    lower.includes('evaluation') ||
+    lower.includes('evaluator')
+  ) {
+
+    speechType = 'evaluation';
+
+    console.log(
+      'Speech Type:',
+      speechType
+    );
+
+    sendToSidebar({
       action: 'speechTypeDetected',
-      speechType: 'prepared_speech'
+      speechType
     });
+
+    return;
   }
 }
+function startTimer() {
 
+  clearInterval(timerInterval);
+
+  elapsedSeconds = 0;
+
+  timerInterval = setInterval(() => {
+
+    elapsedSeconds++;
+
+    sendToSidebar({
+      action: 'timerUpdate',
+      seconds: elapsedSeconds
+    });
+
+  }, 1000);
+}
+
+
+function stopTimer() {
+
+  clearInterval(timerInterval);
+}
 
 function resetSilenceTimer() {
 
@@ -325,19 +402,26 @@ function resetSilenceTimer() {
 
   silenceTimer = setTimeout(() => {
 
-    if (currentSpeakerName) {
+  if (currentSpeakerName) {
 
-      sendToSidebar({
-        action: 'silenceDetected',
-        speakerName: currentSpeakerName,
-        duration: Math.round(
-          (Date.now() - speakerStartTime)
-          / 1000
-        )
-      });
-    }
+    console.log(
+      'Speech ended'
+    );
 
-  }, SILENCE_THRESHOLD);
+    stopTimer();
+
+    sendToSidebar({
+      action: 'speechEnded',
+      speakerName: currentSpeakerName,
+      duration: elapsedSeconds
+    });
+
+    triggerEvaluation(
+      currentSpeakerName
+    );
+  }
+
+}, 5000);
 }
 
 
@@ -359,7 +443,7 @@ function handleNextSpeaker(speakerName) {
 
   currentSpeakerName = speakerName;
 
-  speakerStartTime = Date.now();
+  speakerStartTime = null;
 
   speakerTranscripts[speakerName] = '';
 
@@ -380,6 +464,7 @@ function handleNextSpeaker(speakerName) {
 function handleEndSpeaker() {
 
   if (!currentSpeakerName) return;
+  stopTimer();
 
   triggerEvaluation(
     currentSpeakerName
