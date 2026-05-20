@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Toastmaster Evaluation Bot</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #fff;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 24px 40px;
+      border-bottom: 2px solid #e94560;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header h1 { font-size: 28px; color: #fff; }
+    header span { font-size: 14px; color: #aaa; }
+
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+
+    .input-section {
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 32px;
+      border: 1px solid #2a2a4a;
+    }
+
+    .input-section h2 { font-size: 20px; margin-bottom: 24px; color: #e94560; }
+
+    .speech-type-selector {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .speech-type-btn {
+      flex: 1;
+      padding: 16px;
+      border-radius: 10px;
+      border: 2px solid #2a2a4a;
+      background: #0f0f1a;
+      color: #aaa;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .speech-type-btn.active {
+      border-color: #e94560;
+      color: #fff;
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+    }
+
+    .speech-type-btn:hover { border-color: #e94560; color: #fff; }
+
+    .timer-info {
+      background: #0f0f1a;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #aaa;
+      border-left: 3px solid #e94560;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 8px; }
+
+    label {
+      font-size: 13px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    input {
+      background: #0f0f1a;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: border 0.2s;
+    }
+
+    input:focus { border-color: #e94560; }
+
+    textarea {
+      width: 100%;
+      background: #0f0f1a;
+      border: 1px solid #2a2a4a;
+      border-radius: 8px;
+      padding: 16px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      resize: vertical;
+      min-height: 160px;
+      font-family: inherit;
+      transition: border 0.2s;
+    }
+
+    textarea:focus { border-color: #e94560; }
+
+    .analyze-btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #e94560, #c23152);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .analyze-btn:hover { opacity: 0.9; }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      font-size: 18px;
+      color: #aaa;
+    }
+
+    .loading .spinner {
+      font-size: 40px;
+      animation: spin 1s linear infinite;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .results { display: none; }
+
+    .summary-card {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      border: 1px solid #e94560;
+    }
+
+    .summary-card h2 { font-size: 22px; margin-bottom: 24px; color: #e94560; }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .summary-grid.with-structure {
+      grid-template-columns: repeat(7, 1fr);
+    }
+
+    .summary-item {
+      background: #0f0f1a;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid #2a2a4a;
+    }
+
+    .summary-item .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #e94560;
+      margin-bottom: 8px;
+    }
+
+    .summary-item .label {
+      font-size: 11px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .agents-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .agent-card {
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 28px;
+      border: 1px solid #2a2a4a;
+    }
+
+    .agent-card h3 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .agent-card .content { font-size: 14px; line-height: 1.8; color: #ccc; }
+
+    .mistake {
+      background: #2a1a1a;
+      border-left: 3px solid #e94560;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 10px;
+    }
+
+    .mistake .wrong { color: #e94560; }
+    .mistake .correct { color: #4caf50; }
+    .mistake .explanation { color: #aaa; font-size: 13px; }
+
+    .filler-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      border-bottom: 1px solid #2a2a4a;
+    }
+
+    .filler-item .count {
+      background: #e94560;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 13px;
+    }
+
+    .signal-green { color: #4caf50; }
+    .signal-yellow { color: #ffc107; }
+    .signal-red { color: #e94560; }
+
+    .feedback-box {
+      background: #0f0f1a;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 16px;
+      font-style: italic;
+      color: #aaa;
+      border-left: 3px solid #e94560;
+    }
+
+    .structure-section {
+      background: #0f0f1a;
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 10px;
+    }
+
+    .structure-section h4 {
+      font-size: 14px;
+      color: #e94560;
+      margin-bottom: 8px;
+    }
+
+    .general-eval-card {
+      background: #1a1a2e;
+      border-radius: 16px;
+      padding: 28px;
+      border: 2px solid #e94560;
+      margin-top: 24px;
+    }
+
+    .general-eval-card h3 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: #e94560;
+    }
+
+    .play-btn {
+      background: linear-gradient(135deg, #e94560, #c23152);
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+
+    .play-btn:hover { opacity: 0.9; }
+    .play-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .stop-btn {
+      background: #2a2a4a;
+      color: white;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      transition: opacity 0.2s;
+    }
+
+    .stop-btn:hover { opacity: 0.8; }
+
+    .eval-text {
+      background: #0f0f1a;
+      border-radius: 8px;
+      padding: 24px;
+      line-height: 1.9;
+      color: #ddd;
+      font-size: 15px;
+      border-left: 3px solid #e94560;
+      white-space: pre-wrap;
+      margin-top: 16px;
+    }
+
+    .full-width { grid-column: 1 / -1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🎤 Toastmaster Evaluation Bot</h1>
+    <span>Powered by Groq AI — 4 Agents + Structure Analysis + General Evaluator</span>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Input Section -->
+  <div class="input-section">
+    <h2>📋 Speech Input</h2>
+
+    <!-- Speech Type Selector -->
+    <div class="speech-type-selector">
+      <div class="speech-type-btn active" id="btn-table-topics" onclick="selectSpeechType('table_topics')">
+        🎲 Table Topics<br><small style="font-weight:400;color:#aaa">1 - 2 minutes</small>
+      </div>
+      <div class="speech-type-btn" id="btn-prepared-speech" onclick="selectSpeechType('prepared_speech')">
+        📄 Prepared Speech<br><small style="font-weight:400;color:#aaa">5 - 7 minutes</small>
+      </div>
+    </div>
+
+    <!-- Timer Info -->
+    <div class="timer-info" id="timer-info">
+      🟢 Green: 0-1 min &nbsp;|&nbsp; 🟡 Yellow: 1-1.5 min &nbsp;|&nbsp; 🔴 Red: Over 2 min
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Speaker Name</label>
+        <input type="text" id="speakerName" placeholder="e.g. John Doe" />
+      </div>
+      <div class="form-group">
+        <label>Word of the Day</label>
+        <input type="text" id="wordOfDay" placeholder="e.g. Eloquent" />
+      </div>
+      <div class="form-group">
+        <label>Speech Duration (seconds)</label>
+        <input type="number" id="duration" placeholder="e.g. 90" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Speech Transcript</label>
+      <textarea id="transcript" placeholder="Paste the speech transcript here..."></textarea>
+    </div>
+
+    <button class="analyze-btn" onclick="analyze()">🚀 Analyze Speech</button>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading" id="loading">
+    <span class="spinner">⚙️</span>
+    <span id="loading-text">Running AI agents... Please wait</span>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <!-- Summary -->
+    <div class="summary-card">
+      <h2>📊 Evaluation Summary</h2>
+      <div id="summary-grid" class="summary-grid">
+        <div class="summary-item">
+          <div class="value" id="s-grammar">-</div>
+          <div class="label">Grammar Score</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" id="s-fillers">-</div>
+          <div class="label">Filler Words</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" id="s-signal">-</div>
+          <div class="label">Timer Signal</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" id="s-time">-</div>
+          <div class="label">Time Taken</div>
+        </div>
+        <div class="summary-item">
+          <div class="value" id="s-word">-</div>
+          <div class="label">Word of Day</div>
+        </div>
+        <div class="summary-item" id="s-structure-card" style="display:none">
+          <div class="value" id="s-structure">-</div>
+          <div class="label">Structure Score</div>
+        </div>
+        <div class="summary-item" id="s-topic-card" style="display:none">
+          <div class="value" id="s-topic" style="font-size:14px">-</div>
+          <div class="label">Speech Topic</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent Cards -->
+    <div class="agents-grid" id="agents-grid">
+      <div class="agent-card">
+        <h3>📝 Grammarian Agent</h3>
+        <div class="content" id="grammar-content"></div>
+      </div>
+      <div class="agent-card">
+        <h3>🔊 Ah Counter Agent</h3>
+        <div class="content" id="ah-content"></div>
+      </div>
+      <div class="agent-card">
+        <h3>⏱️ Timer Agent</h3>
+        <div class="content" id="timer-content"></div>
+      </div>
+      <div class="agent-card">
+        <h3>💡 Word of Day Agent</h3>
+        <div class="content" id="word-content"></div>
+      </div>
+      <!-- Structure card shown only for prepared speech -->
+      <div class="agent-card full-width" id="structure-card" style="display:none">
+        <h3>🏗️ Structure Agent</h3>
+        <div class="content" id="structure-content"></div>
+      </div>
+    </div>
+
+    <!-- General Evaluator -->
+    <div class="general-eval-card">
+      <h3>🎤 General Evaluator</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:10px;">
+        <span style="color:#aaa;font-size:13px;">AI-generated 2-minute combined evaluation</span>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <span id="word-count" style="color:#aaa;font-size:13px;"></span>
+          <span id="estimated-duration" style="color:#aaa;font-size:13px;"></span>
+          <button class="play-btn" id="speak-btn" onclick="speakEvaluation()">▶ Play</button>
+          <button class="stop-btn" onclick="stopSpeaking()">⏹ Stop</button>
+        </div>
+      </div>
+      <div class="eval-text" id="general-evaluation-text"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let selectedSpeechType = 'table_topics';
+
+  function selectSpeechType(type) {
+    selectedSpeechType = type;
+
+    document.getElementById('btn-table-topics').classList.toggle('active', type === 'table_topics');
+    document.getElementById('btn-prepared-speech').classList.toggle('active', type === 'prepared_speech');
+
+    if (type === 'prepared_speech') {
+      document.getElementById('timer-info').innerHTML =
+        '🟢 Green: 5-6 min &nbsp;|&nbsp; 🟡 Yellow: 6-7 min &nbsp;|&nbsp; 🔴 Red: Under 5 min or over 7 min';
+      document.getElementById('loading-text').textContent =
+        'Running AI agents + Structure Analysis... Please wait';
+    } else {
+      document.getElementById('timer-info').innerHTML =
+        '🟢 Green: 0-1 min &nbsp;|&nbsp; 🟡 Yellow: 1-1.5 min &nbsp;|&nbsp; 🔴 Red: Over 2 min';
+      document.getElementById('loading-text').textContent =
+        'Running AI agents... Please wait';
+    }
+  }
+
+  async function analyze() {
+    const transcript = document.getElementById('transcript').value.trim();
+    const speakerName = document.getElementById('speakerName').value.trim();
+    const wordOfDay = document.getElementById('wordOfDay').value.trim();
+    const durationSeconds = parseInt(document.getElementById('duration').value);
+
+    if (!transcript || !wordOfDay || !durationSeconds) {
+      alert('Please fill in all fields!');
+      return;
+    }
+
+    document.querySelector('.analyze-btn').disabled = true;
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('results').style.display = 'none';
+
+    try {
+      const response = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcript,
+          speakerName,
+          wordOfDay,
+          durationSeconds,
+          speechType: selectedSpeechType
+        })
+      });
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error);
+
+      displayResults(data.report, data);
+
+    } catch (error) {
+      alert('Error: ' + error.message);
+    } finally {
+      document.querySelector('.analyze-btn').disabled = false;
+      document.getElementById('loading').style.display = 'none';
+    }
+  }
+
+  function displayResults(report, data) {
+    const isPrepared = report.speechType === 'prepared_speech';
+
+    // Summary
+    document.getElementById('s-grammar').textContent = (report.summary.grammarScore || 'N/A') + '/10';
+    document.getElementById('s-fillers').textContent = report.summary.totalFillers;
+    document.getElementById('s-signal').textContent = report.summary.timeSignal;
+    document.getElementById('s-time').textContent = report.summary.timeTaken;
+    document.getElementById('s-word').textContent = report.summary.usedWordOfDay;
+
+    // Show structure score only for prepared speech
+    if (isPrepared && report.summary.structureScore) {
+      document.getElementById('s-structure-card').style.display = 'block';
+      document.getElementById('s-topic-card').style.display = 'block';
+      document.getElementById('s-structure').textContent = report.summary.structureScore + '/10';
+      document.getElementById('s-topic').textContent = report.summary.speechTopic || 'N/A';
+      document.getElementById('summary-grid').className = 'summary-grid with-structure';
+    } else {
+      document.getElementById('s-structure-card').style.display = 'none';
+      document.getElementById('s-topic-card').style.display = 'none';
+      document.getElementById('summary-grid').className = 'summary-grid';
+    }
+
+    // Grammarian
+    const g = report.details.grammarian;
+    let gHtml = '';
+    if (g.grammarMistakes && g.grammarMistakes.length > 0) {
+      g.grammarMistakes.forEach(m => {
+        gHtml += `<div class="mistake">
+          <div class="wrong">❌ "${m.mistake}"</div>
+          <div class="correct">✅ "${m.correction}"</div>
+          <div class="explanation">💡 ${m.explanation}</div>
+        </div>`;
+      });
+    } else {
+      gHtml += '<p>✅ No grammar mistakes found!</p>';
+    }
+    if (g.goodVocabulary && g.goodVocabulary.length > 0) {
+      gHtml += `<p style="margin-top:12px">⭐ Good vocabulary: <strong>${g.goodVocabulary.join(', ')}</strong></p>`;
+    }
+    gHtml += `<div class="feedback-box">${g.feedback}</div>`;
+    document.getElementById('grammar-content').innerHTML = gHtml;
+
+    // Ah Counter
+    const ah = report.details.ahCounter;
+    let ahHtml = '<p style="margin-bottom:10px"><strong>Filler Sounds:</strong></p>';
+    let hasFillerSounds = false;
+    Object.entries(ah.fillerSounds || {}).forEach(([word, count]) => {
+      if (count > 0) {
+        ahHtml += `<div class="filler-item"><span>"${word}"</span><span class="count">${count}x</span></div>`;
+        hasFillerSounds = true;
+      }
+    });
+    if (!hasFillerSounds) ahHtml += '<p style="color:#aaa">None detected ✅</p>';
+
+    ahHtml += '<p style="margin:12px 0 8px"><strong>Filler Words:</strong></p>';
+    let hasFillerWords = false;
+    Object.entries(ah.fillerWords || {}).forEach(([word, count]) => {
+      if (count > 0) {
+        ahHtml += `<div class="filler-item"><span>"${word}"</span><span class="count">${count}x</span></div>`;
+        hasFillerWords = true;
+      }
+    });
+    if (!hasFillerWords) ahHtml += '<p style="color:#aaa">None detected ✅</p>';
+
+    if (ah.overusedWords && ah.overusedWords.length > 0) {
+      ahHtml += '<p style="margin:12px 0 8px"><strong>Overused Words (3+):</strong></p>';
+      ah.overusedWords.forEach(w => {
+        ahHtml += `<div class="filler-item"><span>"${w.word}"</span><span class="count">${w.count}x</span></div>`;
+      });
+    }
+    ahHtml += `<div class="feedback-box">${ah.feedback}</div>`;
+    document.getElementById('ah-content').innerHTML = ahHtml;
+
+    // Timer
+    const t = report.details.timer;
+    const signalClass = t.signal === 'GREEN' ? 'signal-green' : t.signal === 'YELLOW' ? 'signal-yellow' : 'signal-red';
+    document.getElementById('timer-content').innerHTML = `
+      <p class="${signalClass}" style="font-size:40px;text-align:center;margin-bottom:16px">${t.signalEmoji}</p>
+      <div class="filler-item"><span>Signal</span><span class="${signalClass}"><strong>${t.signal}</strong></span></div>
+      <div class="filler-item"><span>Time Taken</span><span>${t.timeFormatted}</span></div>
+      <div class="filler-item"><span>Status</span><span>${t.timeStatus}</span></div>
+      <div class="filler-item"><span>Word Count</span><span>${t.wordCount}</span></div>
+      <div class="filler-item"><span>Speaking Pace</span><span>${t.wordsPerMinute} wpm</span></div>
+      <div class="filler-item"><span>Pace Analysis</span><span>${t.paceAnalysis}</span></div>
+      <div class="feedback-box">${t.feedback}</div>
+    `;
+
+    // Word of Day
+    const w = report.details.wordOfDay;
+    let wHtml = `
+      <p style="text-align:center;margin-bottom:16px;font-size:40px">${w.used ? '✅' : '❌'}</p>
+      <div class="filler-item"><span>Word of Day</span><span><strong>"${w.wordOfDay}"</strong></span></div>
+      <div class="filler-item"><span>Used in Speech</span><span>${w.used ? '✅ Yes' : '❌ No'}</span></div>
+    `;
+    if (w.used) {
+      wHtml += `
+        <div class="filler-item"><span>Used Correctly</span><span>${w.usedCorrectly ? '✅ Yes' : '❌ No'}</span></div>
+        <div class="filler-item"><span>Occurrences</span><span>${w.occurrences}</span></div>
+      `;
+      if (w.quotedSentences && w.quotedSentences.length > 0) {
+        wHtml += `<p style="margin-top:12px;color:#aaa;font-style:italic">"${w.quotedSentences[0]}"</p>`;
+      }
+    }
+    wHtml += `<div class="feedback-box">${w.feedback}</div>`;
+    document.getElementById('word-content').innerHTML = wHtml;
+
+    // Structure Agent (Prepared Speech only)
+    if (isPrepared && report.details.structure) {
+      document.getElementById('structure-card').style.display = 'block';
+      const s = report.details.structure;
+      let sHtml = '';
+
+      sHtml += `<div class="filler-item"><span>Speech Topic</span><span><strong>${s.speechTopic}</strong></span></div>`;
+      sHtml += `<div class="filler-item"><span>Speech Objective</span><span>${s.speechObjective}</span></div>`;
+      sHtml += `<div class="filler-item" style="margin-top:12px"><span>Structure Score</span><span><strong>${s.overallStructureScore}/10</strong></span></div>`;
+
+      sHtml += `<div class="structure-section" style="margin-top:16px">
+        <h4>📖 Introduction ${s.introduction?.present ? '✅' : '❌'}</h4>
+        <p style="color:#aaa;font-size:13px">${s.introduction?.feedback}</p>
+      </div>`;
+
+      sHtml += `<div class="structure-section">
+        <h4>📚 Body ${s.body?.present ? '✅' : '❌'}</h4>`;
+      if (s.body?.mainPoints && s.body.mainPoints.length > 0) {
+        sHtml += `<p style="color:#aaa;font-size:13px;margin-bottom:6px">Main Points:</p>`;
+        s.body.mainPoints.forEach((point, i) => {
+          sHtml += `<p style="color:#ccc;font-size:13px;padding-left:12px">${i + 1}. ${point}</p>`;
+        });
+      }
+      sHtml += `<p style="color:#aaa;font-size:13px;margin-top:6px">Transitions: ${s.body?.hasTransitions ? '✅ Yes' : '❌ No'}</p>`;
+      sHtml += `<p style="color:#aaa;font-size:13px">${s.body?.feedback}</p>
+      </div>`;
+
+      sHtml += `<div class="structure-section">
+        <h4>🎯 Conclusion ${s.conclusion?.present ? '✅' : '❌'}</h4>
+        <p style="color:#aaa;font-size:13px">Call to Action: ${s.conclusion?.callToAction ? '✅ Yes' : '❌ No'}</p>
+        <p style="color:#aaa;font-size:13px">${s.conclusion?.feedback}</p>
+      </div>`;
+
+      sHtml += `<div class="feedback-box">${s.feedback}</div>`;
+      document.getElementById('structure-content').innerHTML = sHtml;
+    } else {
+      document.getElementById('structure-card').style.display = 'none';
+    }
+
+    // General Evaluation
+    if (data && data.generalEvaluation) {
+      const ge = data.generalEvaluation;
+      document.getElementById('general-evaluation-text').innerText = ge.evaluationText;
+      document.getElementById('word-count').textContent = `${ge.wordCount} words`;
+      document.getElementById('estimated-duration').textContent = `Est. duration: ${ge.estimatedDurationFormatted}`;
+    }
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function speakEvaluation() {
+    const text = document.getElementById('general-evaluation-text').innerText;
+    if (!text) return;
+
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.95;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      v.name.includes('Samantha') ||
+      v.name.includes('Google US English') ||
+      v.name.includes('Karen') ||
+      v.name.includes('Daniel')
+    );
+    if (preferred) utterance.voice = preferred;
+
+    utterance.onstart = () => {
+      document.getElementById('speak-btn').textContent = '🔊 Playing...';
+      document.getElementById('speak-btn').disabled = true;
+    };
+    utterance.onend = () => {
+      document.getElementById('speak-btn').textContent = '▶ Play';
+      document.getElementById('speak-btn').disabled = false;
+    };
+
+    window.speechSynthesis.speak(utterance);
+  }
+
+  function stopSpeaking() {
+    window.speechSynthesis.cancel();
+    document.getElementById('speak-btn').textContent = '▶ Play';
+    document.getElementById('speak-btn').disabled = false;
+  }
+</script>
+
+</body>
+</html>

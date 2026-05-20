@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Toastmaster Sidebar</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: #fff;
+      height: 100vh;
+      overflow-y: auto;
+      font-size: 13px;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      padding: 12px 16px;
+      border-bottom: 2px solid #e94560;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    header h1 { font-size: 14px; color: #fff; }
+    header span { font-size: 11px; color: #aaa; }
+
+    .container { padding: 12px; }
+
+    .info-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .info-item {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 8px 12px;
+      border: 1px solid #2a2a4a;
+    }
+
+    .info-item .label {
+      font-size: 10px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .info-item .value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #e94560;
+    }
+
+    .live-transcript {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      border: 1px solid #2a2a4a;
+      min-height: 80px;
+      max-height: 120px;
+      overflow-y: auto;
+    }
+
+    .live-transcript .label {
+      font-size: 10px;
+      color: #aaa;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .live-transcript .final-text {
+      color: #fff;
+      line-height: 1.6;
+    }
+
+    .live-transcript .interim-text {
+      color: #aaa;
+      font-style: italic;
+    }
+
+    .speaker-card {
+      background: #1a1a2e;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid #2a2a4a;
+    }
+
+    .speaker-card.active {
+      border-color: #e94560;
+      box-shadow: 0 0 10px rgba(233, 69, 96, 0.2);
+    }
+
+    .speaker-card.evaluated {
+      border-color: #4caf50;
+    }
+
+    .speaker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .speaker-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .speaker-badge {
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .badge-speaking {
+      background: #3a1a1a;
+      color: #e94560;
+    }
+
+    .badge-evaluating {
+      background: #1a2a3a;
+      color: #2196f3;
+    }
+
+    .badge-done {
+      background: #1a3a1a;
+      color: #4caf50;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .summary-item {
+      background: #0f0f1a;
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .summary-item .s-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #e94560;
+    }
+
+    .summary-item .s-label {
+      font-size: 10px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+
+    .agent-result {
+      background: #0f0f1a;
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 6px;
+    }
+
+    .agent-result h4 {
+      font-size: 12px;
+      color: #e94560;
+      margin-bottom: 6px;
+    }
+
+    .agent-result p {
+      font-size: 12px;
+      color: #ccc;
+      line-height: 1.5;
+    }
+
+    .mistake-item {
+      background: #2a1a1a;
+      border-left: 2px solid #e94560;
+      padding: 6px 10px;
+      border-radius: 0 4px 4px 0;
+      margin-bottom: 4px;
+    }
+
+    .mistake-item .wrong { color: #e94560; font-size: 12px; }
+    .mistake-item .correct { color: #4caf50; font-size: 12px; }
+
+    .filler-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .filler-tag {
+      background: #2a2a4a;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+    .filler-tag .count {
+      color: #e94560;
+      font-weight: 700;
+    }
+
+    .general-eval {
+      background: #1a1a2e;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 2px solid #e94560;
+    }
+
+    .general-eval h3 {
+      font-size: 14px;
+      color: #e94560;
+      margin-bottom: 10px;
+    }
+
+    .general-eval p {
+      font-size: 12px;
+      color: #ccc;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .play-btn {
+      background: linear-gradient(135deg, #e94560, #c23152);
+      color: white;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+      margin-right: 6px;
+    }
+
+    .stop-btn {
+      background: #2a2a4a;
+      color: white;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .signal-green { color: #4caf50; font-weight: 700; }
+    .signal-yellow { color: #ffc107; font-weight: 700; }
+    .signal-red { color: #e94560; font-weight: 700; }
+
+    .loading-dots {
+      display: inline-block;
+      animation: dots 1.5s infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #aaa;
+    }
+
+    .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+
+    .silence-warning {
+      background: #2a1a00;
+      border: 1px solid #ff9800;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #ff9800;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🎤 Toastmaster Evaluation Bot</h1>
+  <span id="header-status">Waiting for meeting to start...</span>
+</header>
+
+<div class="container">
+
+  <!-- Info Bar -->
+  <div class="info-bar">
+    <div class="info-item">
+      <div class="label">📖 Word of Day</div>
+      <div class="value" id="word-of-day">Detecting...</div>
+    </div>
+    <div class="info-item">
+      <div class="label">📋 Speech Type</div>
+      <div class="value" id="speech-type">-</div>
+    </div>
+  </div>
+
+  <!-- Silence Warning -->
+  <div class="silence-warning" id="silence-warning">
+    ⚠️ Silence detected — speaker may have finished speaking
+  </div>
+
+  <!-- Live Transcript -->
+  <div class="live-transcript">
+    <div class="label">🎙️ Live Transcript</div>
+    <div id="live-transcript-text">
+      <span style="color:#aaa;font-style:italic">Waiting for speech...</span>
+    </div>
+  </div>
+
+  <!-- Speakers Section -->
+  <div id="speakers-section">
+    <div class="empty-state" id="empty-state">
+      <div class="icon">🎤</div>
+      <p>Meeting not started yet</p>
+      <p style="font-size:11px;margin-top:8px">Click the extension icon to start</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="sidebar.js"></script>
+
+</body>
+</html>

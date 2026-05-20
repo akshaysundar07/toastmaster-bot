@@ -1,0 +1,46 @@
+{
+  "manifest_version": 3,
+  "name": "Toastmaster Evaluation Bot",
+  "version": "1.0",
+  "description": "AI-powered Toastmaster speech evaluator",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "tabs",
+    "tabCapture"
+  ],
+  "host_permissions": [
+    "https://meet.google.com/*",
+    "https://*.teams.microsoft.com/*",
+    "https://zoom.us/*",
+    "http://localhost/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://meet.google.com/*",
+        "https://*.teams.microsoft.com/*",
+        "https://zoom.us/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Toastmaster Bot"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "sidebar.html",
+        "sidebar.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
